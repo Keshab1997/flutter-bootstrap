@@ -282,6 +282,13 @@ flutter --disable-analytics >/dev/null 2>&1 || true
 flutter config --no-analytics >/dev/null 2>&1 || true
 flutter config --enable-web   >/dev/null 2>&1 || true
 
+# A default-style cache in $HOME is a snapshot trap: it is hundreds of MB that
+# the agent workspace will try to carry forward.
+for stale in "$HOME/.pub-cache" "$HOME/.dartServer"; do
+  [ -d "$stale" ] && warn "found $stale ($(du -sh "$stale" 2>/dev/null | cut -f1)) -- it lives in the agent workspace; \
+PUB_CACHE is now $PUB_CACHE, so consider: rm -rf $stale"
+done
+
 LINKED=0
 link_bins && LINKED=1 || warn "could not link into /usr/local/bin -- use: export PATH=$FLUTTER_ROOT/bin:\$PATH"
 
@@ -291,14 +298,18 @@ link_bins && LINKED=1 || warn "could not link into /usr/local/bin -- use: export
 step "verify"
 VER_OUT=$("$FLUTTER_ROOT/bin/flutter" --version 2>&1) || die "flutter --version failed:
 $VER_OUT"
-printf '%s\n' "$VER_OUT" | sed 's/^/  /'
+[ "$QUIET" = 1 ] || printf '%s\n' "$VER_OUT" | sed 's/^/  /'
 say "  $("$FLUTTER_ROOT/bin/dart" --version 2>&1)"
 
 PROBE_STATUS="skipped"
 if [ -n "$PRECACHE" ]; then
   step "precache: $PRECACHE"
   # shellcheck disable=SC2086
-  "$FLUTTER_ROOT/bin/flutter" precache $(printf '%s' "$PRECACHE" | tr ',' ' ' | sed 's/[^ ]*/--&/g') 2>&1 | tail -3 | sed 's/^/  /' || warn "precache failed (not fatal)"
+  if [ "$QUIET" = 1 ]; then
+    "$FLUTTER_ROOT/bin/flutter" precache $(printf '%s' "$PRECACHE" | tr ',' ' ' | sed 's/[^ ]*/--&/g') >/dev/null 2>&1 || warn "precache failed (not fatal)"
+  else
+    "$FLUTTER_ROOT/bin/flutter" precache $(printf '%s' "$PRECACHE" | tr ',' ' ' | sed 's/[^ ]*/--&/g') 2>&1 | tail -3 | sed 's/^/  /' || warn "precache failed (not fatal)"
+  fi
 fi
 
 if [ "$DEEP_VERIFY" = 1 ]; then
