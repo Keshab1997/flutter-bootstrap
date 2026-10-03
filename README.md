@@ -182,6 +182,19 @@ fb_web .                            # flutter build web
 
 ---
 
+## Pairs with `agent-bootstrap`
+
+[`agent-bootstrap`](https://github.com/Keshab1997/agent-bootstrap) connects an
+agent to GitHub with a device-flow token (one browser tap, zero secrets). This
+repo gives it a Flutter SDK. Run both in one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Keshab1997/agent-bootstrap/main/setup.sh \
+  | bash -s -- --with-flutter
+```
+
+---
+
 ## Reuse it from any chat
 
 Paste this into any agent chat when the project is a Flutter/Dart one:
