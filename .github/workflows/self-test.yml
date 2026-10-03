@@ -1,0 +1,54 @@
+name: self-test
+
+# Proves setup.sh + env.sh actually work on a clean machine every time this
+# repo changes. If the badge is green, an agent can trust the one-liner.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup.sh --root on a clean runner
+        run: |
+          time bash setup.sh --root "$RUNNER_TEMP/flutter" --no-swap --json | tee result.json
+          test "$(python3 -c 'import json;print(json.load(open("result.json"))["status"])')" = "installed"
+
+      - name: flutter + dart resolve
+        run: |
+          flutter --version
+          dart --version
+
+      - name: env.sh sources cleanly with an explicit FLUTTER_ROOT
+        run: |
+          export FLUTTER_ROOT="$RUNNER_TEMP/flutter"
+          source env.sh
+          flutter --version | head -1
+          type fb_check >/dev/null
+
+      - name: deep verify — create a project, then pub get + analyze + test
+        run: |
+          bash setup.sh --root "$RUNNER_TEMP/flutter" --quiet --deep-verify --json
+
+      - name: idempotency — a second run must be a fast no-op
+        run: |
+          START=$(date +%s)
+          OUT=$(bash setup.sh --root "$RUNNER_TEMP/flutter" --quiet --json)
+          echo "$OUT"
+          echo "$OUT" | grep -q already-installed
+          ELAPSED=$(( $(date +%s) - START ))
+          echo "second run took ${ELAPSED}s"
+          [ "$ELAPSED" -lt 15 ]
+
+      - name: auto-picked root works too (no --root)
+        run: |
+          bash setup.sh --quiet --json
+          flutter --version | head -1

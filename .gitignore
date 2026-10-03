@@ -1,0 +1,25 @@
+# download cache / scratch
+fb-dl/
+*.tar.xz
+*.tar.gz
+
+# local install roots (if someone installs with --root inside the repo)
+flutter/
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# python
+__pycache__/
+*.py[cod]
+
+# never commit credentials, even though this repo needs none
+*.pem
+*.key
+.env
+secrets/
